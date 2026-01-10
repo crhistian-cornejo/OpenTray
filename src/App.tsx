@@ -15,7 +15,7 @@ import {
 import { useOpenCode, useTheme, useUpdater } from "./hooks";
 import type { View } from "./lib/types";
 import { getDirectoryName } from "./lib/utils";
-import "./App.css";
+
 
 function App() {
   const [initialized, setInitialized] = useState(false);

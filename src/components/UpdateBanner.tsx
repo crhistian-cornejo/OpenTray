@@ -1,4 +1,4 @@
-import "./UpdateBanner.css";
+
 
 interface UpdateInfo {
   version: string;
