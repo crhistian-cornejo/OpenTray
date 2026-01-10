@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { OpenCodeInstance, Session, SessionState, FileDiff, Part, PermissionRequest, SessionStatus, MessageWithParts, OpenCodeConfig, MCPServer, FullProvider, TodoItem } from "../lib/types";
 import {
@@ -76,6 +76,14 @@ export function useOpenCode(): UseOpenCodeReturn {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [showArchived, setShowArchived] = useState(false);
   const [archivedSessions, setArchivedSessions] = useState<Session[]>([]);
+  
+  // Refs for SSE callbacks - prevents re-creating SSE subscription when session changes
+  const selectedSessionRef = useRef<Session | null>(null);
+  const updateMessagePartRef = useRef<(messageId: string, part: Part) => void>(() => {});
+  const addMessageRef = useRef<(sessionId: string, messageId: string, info: MessageWithParts["info"]) => void>(() => {});
+  
+  // Track previous status for notification logic
+  const prevStatusRef = useRef<SessionStatus>("idle");
 
   // Load archived sessions from localStorage
   useEffect(() => {
@@ -129,13 +137,27 @@ export function useOpenCode(): UseOpenCodeReturn {
       };
     });
   }, []);
-
-  // Discover instances on mount
+  
+  // Keep refs updated for SSE callbacks
   useEffect(() => {
+    selectedSessionRef.current = selectedSession;
+  }, [selectedSession]);
+  
+  useEffect(() => {
+    updateMessagePartRef.current = updateMessagePart;
+    addMessageRef.current = addMessage;
+  }, [updateMessagePart, addMessage]);
+
+  // Discover instances on mount - use 120s interval to reduce CPU usage
+  useEffect(() => {
+    let isMounted = true;
+    
     const discover = async () => {
+      if (!isMounted) return;
       setLoading(true);
       try {
         const found = await discoverInstances();
+        if (!isMounted) return;
         setInstances(found);
         if (found.length === 1) {
           setSelectedInstance(found[0]);
@@ -143,18 +165,24 @@ export function useOpenCode(): UseOpenCodeReturn {
           setError("No OpenCode instances found");
         }
       } catch {
-        setError("Failed to discover instances");
+        if (isMounted) setError("Failed to discover instances");
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
     discover();
     
-    const interval = setInterval(discover, 30000);
-    return () => clearInterval(interval);
+    // Reduced from 30s to 120s to decrease CPU usage
+    const interval = setInterval(discover, 120000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
-  // Fetch sessions when instance is selected
+  // Fetch sessions and subscribe to SSE when instance is selected
+  // NOTE: SSE subscription only depends on selectedInstance, not selectedSession
+  // We use refs for selectedSession to avoid reconnecting on every session change
   useEffect(() => {
     if (!selectedInstance) return;
     
@@ -183,7 +211,7 @@ export function useOpenCode(): UseOpenCodeReturn {
     loadMCP();
     loadProviders();
     
-    // Subscribe to events
+    // Subscribe to events - using refs for session-specific callbacks
     const unsubscribe = subscribeToEvents(selectedInstance, {
       onSessionUpdated: (session) => {
         setSessions((prev) => {
@@ -197,8 +225,9 @@ export function useOpenCode(): UseOpenCodeReturn {
         });
       },
       onMessageUpdated: (sessionId, messageId, info) => {
-        if (selectedSession?.id === sessionId) {
-          addMessage(sessionId, messageId, info as MessageWithParts["info"]);
+        // Use ref to check current session without recreating subscription
+        if (selectedSessionRef.current?.id === sessionId) {
+          addMessageRef.current(sessionId, messageId, info as MessageWithParts["info"]);
         }
       },
       onPermissionAsked: (req) => {
@@ -214,19 +243,21 @@ export function useOpenCode(): UseOpenCodeReturn {
         setPermissionRequest(null);
       },
       onPartUpdated: (sessionId, messageId, part) => {
-        if (selectedSession?.id === sessionId) {
-          updateMessagePart(messageId, part);
+        // Use ref to check current session without recreating subscription
+        if (selectedSessionRef.current?.id === sessionId) {
+          updateMessagePartRef.current(messageId, part);
         }
       },
       onStatusChanged: (sessionId, status) => {
-        if (selectedSession?.id === sessionId) {
+        // Use ref to check current session without recreating subscription
+        if (selectedSessionRef.current?.id === sessionId) {
           setSessionStatus(status);
         }
       },
     });
     
     return unsubscribe;
-  }, [selectedInstance, selectedSession, updateMessagePart, addMessage]);
+  }, [selectedInstance]); // Only reconnect when instance changes, not session
 
   // Fetch session details when session is selected
   useEffect(() => {
@@ -463,18 +494,21 @@ export function useOpenCode(): UseOpenCodeReturn {
     updateBadge();
   }, [sessionStatus, diffs]);
 
-  // Send notification when session completes
+  // Send notification when session completes (transitions from busy to idle)
   useEffect(() => {
-    const handleSessionComplete = () => {
-      if (sessionStatus === "idle" && selectedSession && diffs.length > 0) {
-        invoke("send_notification", {
-          title: "Task Completed",
-          body: `${selectedSession.title} has ${diffs.length} file${diffs.length > 1 ? "s" : ""} changed`,
-        }).catch(() => {});
-      }
-    };
-    
-    handleSessionComplete();
+    // Only notify when transitioning FROM busy TO idle with diffs
+    if (
+      prevStatusRef.current === "busy" && 
+      sessionStatus === "idle" && 
+      selectedSession && 
+      diffs.length > 0
+    ) {
+      invoke("send_notification", {
+        title: "Task Completed",
+        body: `${selectedSession.title} has ${diffs.length} file${diffs.length > 1 ? "s" : ""} changed`,
+      }).catch(() => {});
+    }
+    prevStatusRef.current = sessionStatus;
   }, [sessionStatus, diffs, selectedSession]);
 
   return {

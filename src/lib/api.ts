@@ -237,12 +237,34 @@ export interface SSECallbacks {
   onStatusChanged?: (sessionId: string, status: "idle" | "busy" | "retry") => void;
 }
 
-// Subscribe to SSE events
+// Subscribe to SSE events with debounced session updates
 export function subscribeToEvents(
   instance: OpenCodeInstance,
   callbacks: SSECallbacks
 ): () => void {
   const eventSource = new EventSource(`${instance.url}/global/event`);
+  
+  // Debounce session updates to batch rapid changes
+  let sessionUpdateTimeout: ReturnType<typeof setTimeout> | null = null;
+  let pendingSessionUpdates = new Map<string, Session>();
+  
+  const flushSessionUpdates = () => {
+    if (pendingSessionUpdates.size > 0 && callbacks.onSessionUpdated) {
+      pendingSessionUpdates.forEach((session) => {
+        callbacks.onSessionUpdated!(session);
+      });
+      pendingSessionUpdates.clear();
+    }
+  };
+  
+  const debouncedSessionUpdate = (session: Session) => {
+    pendingSessionUpdates.set(session.id, session);
+    if (sessionUpdateTimeout) {
+      clearTimeout(sessionUpdateTimeout);
+    }
+    // Flush updates after 100ms of no new updates
+    sessionUpdateTimeout = setTimeout(flushSessionUpdates, 100);
+  };
   
   eventSource.onmessage = (event) => {
     try {
@@ -278,7 +300,8 @@ export function subscribeToEvents(
           break;
           
         case "session.updated":
-          callbacks.onSessionUpdated?.(properties);
+          // Use debounced update to batch rapid session updates
+          debouncedSessionUpdate(properties as Session);
           break;
           
         case "permission.asked":
@@ -310,6 +333,10 @@ export function subscribeToEvents(
   };
   
   return () => {
+    if (sessionUpdateTimeout) {
+      clearTimeout(sessionUpdateTimeout);
+    }
+    flushSessionUpdates(); // Flush any pending updates before closing
     eventSource.close();
   };
 }
