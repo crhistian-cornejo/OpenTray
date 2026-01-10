@@ -4,6 +4,9 @@ use tauri::{
     AppHandle,
 };
 
+#[cfg(not(target_os = "macos"))]
+use tauri::Manager;
+
 #[cfg(target_os = "macos")]
 use tauri_nspanel::ManagerExt;
 
