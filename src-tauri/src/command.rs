@@ -1,12 +1,14 @@
 use std::path::PathBuf;
 use std::sync::Once;
 
+#[cfg(target_os = "macos")]
 use tauri_nspanel::ManagerExt;
 use tauri_plugin_notification::NotificationExt;
 
+use crate::fns::update_tray_icon_with_badge;
+#[cfg(target_os = "macos")]
 use crate::fns::{
     position_panel, setup_panel_listeners, swizzle_to_panel, update_panel_appearance,
-    update_tray_icon_with_badge,
 };
 
 static INIT: Once = Once::new();
@@ -14,23 +16,51 @@ static INIT: Once = Once::new();
 #[tauri::command]
 pub fn init(app_handle: tauri::AppHandle) {
     INIT.call_once(|| {
-        swizzle_to_panel(&app_handle);
-        update_panel_appearance(&app_handle);
-        setup_panel_listeners(&app_handle);
+        #[cfg(target_os = "macos")]
+        {
+            swizzle_to_panel(&app_handle);
+            update_panel_appearance(&app_handle);
+            setup_panel_listeners(&app_handle);
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            let _ = &app_handle; // Suppress unused warning on non-macOS
+        }
     });
 }
 
 #[tauri::command]
 pub fn show_panel(app_handle: tauri::AppHandle) {
-    let panel = app_handle.get_webview_panel("main").unwrap();
-    position_panel(&app_handle, 0.0);
-    panel.show();
+    #[cfg(target_os = "macos")]
+    {
+        let panel = app_handle.get_webview_panel("main").unwrap();
+        position_panel(&app_handle, 0.0);
+        panel.show();
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        // On Windows, show the main window instead
+        if let Some(window) = app_handle.get_webview_window("main") {
+            let _ = window.show();
+            let _ = window.set_focus();
+        }
+    }
 }
 
 #[tauri::command]
 pub fn hide_panel(app_handle: tauri::AppHandle) {
-    let panel = app_handle.get_webview_panel("main").unwrap();
-    panel.order_out(None);
+    #[cfg(target_os = "macos")]
+    {
+        let panel = app_handle.get_webview_panel("main").unwrap();
+        panel.order_out(None);
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        // On Windows, hide the main window
+        if let Some(window) = app_handle.get_webview_window("main") {
+            let _ = window.hide();
+        }
+    }
 }
 
 #[tauri::command]

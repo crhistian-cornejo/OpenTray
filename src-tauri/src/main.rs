@@ -24,33 +24,40 @@ fn main() {
             command::write_file,
             command::file_exists
         ])
-        .plugin(tauri_nspanel::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_dialog::init())
-        .setup(move |app| {
-            // Set as accessory app (no dock icon, menubar only)
-            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+        .plugin(tauri_plugin_dialog::init());
 
-            let app_handle = app.app_handle();
+    // Add macOS-specific nspanel plugin
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder.plugin(tauri_nspanel::init());
+    }
 
-            // Create tray icon
-            tray::create(app_handle)?;
+    builder = builder.setup(move |app| {
+        // Set as accessory app (no dock icon, menubar only) - macOS only
+        #[cfg(target_os = "macos")]
+        app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
-            // Inject updater status into frontend
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.eval(&format!(
-                    r#"
-                    window.__OPENTRAY__ = window.__OPENTRAY__ || {{}};
-                    window.__OPENTRAY__.updaterEnabled = {};
-                    "#,
-                    updater_enabled
-                ));
-            }
+        let app_handle = app.app_handle();
 
-            Ok(())
-        });
+        // Create tray icon
+        tray::create(app_handle)?;
+
+        // Inject updater status into frontend
+        if let Some(window) = app.get_webview_window("main") {
+            let _ = window.eval(&format!(
+                r#"
+                window.__OPENTRAY__ = window.__OPENTRAY__ || {{}};
+                window.__OPENTRAY__.updaterEnabled = {};
+                "#,
+                updater_enabled
+            ));
+        }
+
+        Ok(())
+    });
 
     // Conditionally add updater plugin only when signing key is available
     if updater_enabled {
