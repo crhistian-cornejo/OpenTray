@@ -13,11 +13,26 @@
   --text-primary: #1d1d1f;
   --text-secondary: #86868b;
   --text-tertiary: #aeaeb2;
+  --text-weak: #98989d;
+  --text-weaker: #636366;
+  --text-strong: #000000;
+  --text-interactive: #034cff;
   --border-color: #d2d2d7;
+  --border-interactive: #034cff;
+  --border-success: #12c905;
+  --border-warning: #ffdc17;
+  --border-error: #fc533a;
   --accent-color: #034cff;
-  --success-color: #34c759;
-  --warning-color: #ff9500;
-  --error-color: #ff3b30;
+  --success-color: #12c905;
+  --warning-color: #ffdc17;
+  --error-color: #fc533a;
+  
+  // Surface colors (OpenCode style)
+  --surface-base: #f8f7f7;
+  --surface-hover: rgba(5, 0, 0, 0.06);
+  --surface-active: rgba(0, 0, 0, 0.1);
+  --surface-raised: #ffffff;
+  --surface-inset: rgba(0, 0, 0, 0.02);
   
   // Shadows
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -38,7 +53,20 @@
     --text-primary: #f5f5f7;
     --text-secondary: #98989d;
     --text-tertiary: #636366;
+    --text-weak: #86868b;
+    --text-weaker: #636366;
+    --text-strong: #ffffff;
+    --text-interactive: #034cff;
     --border-color: #38383a;
+    --border-interactive: #034cff;
+    --border-success: #12c905;
+    --border-warning: #ffdc17;
+    --border-error: #fc533a;
+    --surface-base: #1c1c1e;
+    --surface-hover: rgba(224, 183, 183, 0.09);
+    --surface-active: rgba(0, 0, 0, 0.1);
+    --surface-raised: #2c2c2e;
+    --surface-inset: rgba(14, 11, 11, 0.5);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
@@ -46,29 +74,55 @@
 
 // Dark theme - Forced
 :root[data-theme="dark"] {
-  --bg-primary: #1c1c1e;
-  --bg-secondary: #2c2c2e;
-  --bg-tertiary: #3a3a3c;
-  --text-primary: #f5f5f7;
-  --text-secondary: #98989d;
-  --text-tertiary: #636366;
-  --border-color: #38383a;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
+    --bg-primary: #1c1c1e;
+    --bg-secondary: #2c2c2e;
+    --bg-tertiary: #3a3a3c;
+    --text-primary: #f5f5f7;
+    --text-secondary: #98989d;
+    --text-tertiary: #636366;
+    --text-weak: #86868b;
+    --text-weaker: #636366;
+    --text-strong: #ffffff;
+    --text-interactive: #034cff;
+    --border-color: #38383a;
+    --border-interactive: #034cff;
+    --border-success: #12c905;
+    --border-warning: #ffdc17;
+    --border-error: #fc533a;
+    --surface-base: #1c1c1e;
+    --surface-hover: rgba(224, 183, 183, 0.09);
+    --surface-active: rgba(0, 0, 0, 0.1);
+    --surface-raised: #2c2c2e;
+    --surface-inset: rgba(14, 11, 11, 0.5);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
 
 // Light theme - Forced
 :root[data-theme="light"] {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f5f5f7;
-  --bg-tertiary: #e8e8ed;
-  --text-primary: #1d1d1f;
-  --text-secondary: #86868b;
-  --text-tertiary: #aeaeb2;
-  --border-color: #d2d2d7;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f7;
+    --bg-tertiary: #e8e8ed;
+    --text-primary: #1d1d1f;
+    --text-secondary: #86868b;
+    --text-tertiary: #aeaeb2;
+    --text-weak: #98989d;
+    --text-weaker: #636366;
+    --text-strong: #000000;
+    --text-interactive: #034cff;
+    --border-color: #d2d2d7;
+    --border-interactive: #034cff;
+    --border-success: #12c905;
+    --border-warning: #ffdc17;
+    --border-error: #fc533a;
+    --surface-base: #f8f7f7;
+    --surface-hover: rgba(5, 0, 0, 0.06);
+    --surface-active: rgba(0, 0, 0, 0.1);
+    --surface-raised: #ffffff;
+    --surface-inset: rgba(0, 0, 0, 0.02);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
 
 // --------------------------------------------
 // Reset & Base
@@ -1099,10 +1153,13 @@ body {
 // Settings
 // --------------------------------------------
 .settings {
-  padding: 16px 16px 0 16px;
+  padding: 12px 16px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   
   &-section {
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     &:last-child { margin-bottom: 0; }
   }
   
@@ -1198,9 +1255,10 @@ body {
   &-tabs {
     display: flex;
     gap: 2px;
-    padding: 0 0 16px 0;
+    padding: 0 0 12px 0;
     border-bottom: 1px solid var(--border-color);
-    margin-bottom: 16px;
+    margin-bottom: 12px;
+    flex-shrink: 0;
   }
   
   &-tab {
@@ -1227,9 +1285,9 @@ body {
   }
   
   &-content {
-    max-height: calc(100vh - 200px);
+    flex: 1;
     overflow-y: auto;
-    padding-bottom: 0;
+    padding-bottom: 8px;
   }
   
   &-model {
