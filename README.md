@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="src-tauri/icons/128x128@2x.png" width="128" height="128" alt="OpenTray">
+  <img src="src-tauri/icons/logo-128x128@2x.png" width="128" height="128" alt="OpenTray">
 </p>
 
 <h1 align="center">OpenTray</h1>

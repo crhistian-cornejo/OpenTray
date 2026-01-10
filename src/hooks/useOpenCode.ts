@@ -148,35 +148,66 @@ export function useOpenCode(): UseOpenCodeReturn {
     addMessageRef.current = addMessage;
   }, [updateMessagePart, addMessage]);
 
-  // Discover instances on mount - use 120s interval to reduce CPU usage
+  // Discover instances on mount with aggressive initial discovery and smart polling
   useEffect(() => {
     let isMounted = true;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    let retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
     
-    const discover = async () => {
-      if (!isMounted) return;
+    const discover = async (): Promise<OpenCodeInstance[]> => {
+      if (!isMounted) return [];
       setLoading(true);
       try {
         const found = await discoverInstances();
-        if (!isMounted) return;
+        if (!isMounted) return [];
         setInstances(found);
         if (found.length === 1) {
           setSelectedInstance(found[0]);
         } else if (found.length === 0) {
           setError("No OpenCode instances found");
+        } else {
+          setError(null);
         }
+        return found;
       } catch {
         if (isMounted) setError("Failed to discover instances");
+        return [];
       } finally {
         if (isMounted) setLoading(false);
       }
     };
-    discover();
     
-    // Reduced from 30s to 120s to decrease CPU usage
-    const interval = setInterval(discover, 120000);
+    // Aggressive initial discovery: retry up to 3 times with 2s intervals if no instance found
+    const initialDiscovery = async () => {
+      let attempts = 0;
+      const maxAttempts = 3;
+      const retryDelay = 2000;
+      
+      while (isMounted && attempts < maxAttempts) {
+        const found = await discover();
+        if (found.length > 0) {
+          break; // Found instance(s), stop retrying
+        }
+        attempts++;
+        if (attempts < maxAttempts && isMounted) {
+          await new Promise(resolve => {
+            retryTimeoutId = setTimeout(resolve, retryDelay);
+          });
+        }
+      }
+      
+      // Start regular polling after initial discovery completes
+      // Use 10s interval for responsive detection, but only poll if no instance is selected
+      // or if we want to detect new instances
+      intervalId = setInterval(discover, 10000);
+    };
+    
+    initialDiscovery();
+    
     return () => {
       isMounted = false;
-      clearInterval(interval);
+      if (intervalId) clearInterval(intervalId);
+      if (retryTimeoutId) clearTimeout(retryTimeoutId);
     };
   }, []);
 
@@ -510,6 +541,26 @@ export function useOpenCode(): UseOpenCodeReturn {
     }
     prevStatusRef.current = sessionStatus;
   }, [sessionStatus, diffs, selectedSession]);
+
+  // Show permission popup when a permission request comes in
+  useEffect(() => {
+    if (!permissionRequest || !selectedInstance) return;
+
+    // Find the session title for the permission request
+    const session = sessions.find((s) => s.id === permissionRequest.sessionID);
+    const sessionTitle = session?.title || "Unknown session";
+
+    // Show the permission popup window
+    invoke("show_permission_popup", {
+      data: {
+        request: permissionRequest,
+        sessionTitle,
+        instanceUrl: selectedInstance.url,
+      },
+    }).catch((err) => {
+      console.error("Failed to show permission popup:", err);
+    });
+  }, [permissionRequest, selectedInstance, sessions]);
 
   return {
     instances,

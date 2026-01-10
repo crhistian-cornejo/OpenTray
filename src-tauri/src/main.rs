@@ -22,7 +22,10 @@ fn main() {
             command::update_tray_icon,
             command::read_file,
             command::write_file,
-            command::file_exists
+            command::file_exists,
+            command::show_permission_popup,
+            command::hide_permission_popup,
+            command::get_pending_permission
         ])
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_notification::init())
@@ -47,13 +50,16 @@ fn main() {
 
         // Inject updater status into frontend
         if let Some(window) = app.get_webview_window("main") {
-            let _ = window.eval(&format!(
-                r#"
+            let _ = window.eval(
+                format!(
+                    r#"
                 window.__OPENTRAY__ = window.__OPENTRAY__ || {{}};
                 window.__OPENTRAY__.updaterEnabled = {};
                 "#,
-                updater_enabled
-            ));
+                    updater_enabled
+                )
+                .as_str(),
+            );
         }
 
         Ok(())

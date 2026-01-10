@@ -1,7 +1,7 @@
 use tauri::{
     image::Image,
     tray::{MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Manager,
+    AppHandle,
 };
 
 #[cfg(target_os = "macos")]
@@ -11,12 +11,25 @@ use tauri_nspanel::ManagerExt;
 use crate::fns::position_panel;
 
 pub fn create(app_handle: &AppHandle) -> tauri::Result<TrayIcon> {
+    // Use simplified monochrome icon for macOS (template icon)
+    // Use full color logo for Windows
+    #[cfg(target_os = "macos")]
     let icon = Image::from_bytes(include_bytes!("../icons/tray.png"))?;
 
-    TrayIconBuilder::with_id("tray")
+    #[cfg(not(target_os = "macos"))]
+    let icon = Image::from_bytes(include_bytes!("../icons/logo-32x32.png"))?;
+
+    let mut builder = TrayIconBuilder::with_id("tray")
         .icon(icon)
-        .icon_as_template(true) // Important for macOS - adapts to light/dark mode
-        .tooltip("OpenTray")
+        .tooltip("OpenTray");
+
+    // Only use template mode on macOS (adapts to light/dark mode)
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder.icon_as_template(true);
+    }
+
+    builder
         .on_tray_icon_event(|tray, event| {
             let app_handle = tray.app_handle();
 

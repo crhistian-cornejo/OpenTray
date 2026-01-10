@@ -11,7 +11,7 @@ interface SessionListProps {
   onBulkArchive?: (sessions: Session[]) => void;
   onBulkDelete?: (sessions: Session[]) => void;
   selectionMode?: boolean;
-  onEnterSelectionMode?: () => void;
+  onExitSelectionMode?: () => void;
   showArchived?: boolean;
 }
 
@@ -63,7 +63,7 @@ function groupSessionsByDirectory(sessions: Session[], activeDirectory?: string)
     });
 }
 
-export function SessionList({ sessions, activeDirectory, onSelect, onDeleteSession, onArchiveSession, onBulkArchive, onBulkDelete, selectionMode = false, onEnterSelectionMode }: SessionListProps) {
+export function SessionList({ sessions, activeDirectory, onSelect, onDeleteSession, onArchiveSession, onBulkArchive, onBulkDelete, selectionMode = false, onExitSelectionMode }: SessionListProps) {
   const groups = useMemo(() => groupSessionsByDirectory(sessions, activeDirectory), [sessions, activeDirectory]);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
     const initial = new Set<string>();
@@ -98,6 +98,43 @@ export function SessionList({ sessions, activeDirectory, onSelect, onDeleteSessi
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [contextMenu.show]);
+
+  // Adjust context menu position to stay within viewport
+  useEffect(() => {
+    if (contextMenu.show && menuRef.current) {
+      const menu = menuRef.current;
+      const rect = menu.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      let newX = contextMenu.x;
+      let newY = contextMenu.y;
+      
+      // Adjust horizontal position if menu goes off right edge
+      if (rect.right > viewportWidth) {
+        newX = viewportWidth - rect.width - 8;
+      }
+      // Adjust horizontal position if menu goes off left edge
+      if (newX < 8) {
+        newX = 8;
+      }
+      
+      // Adjust vertical position if menu goes off bottom edge
+      if (rect.bottom > viewportHeight) {
+        newY = viewportHeight - rect.height - 8;
+      }
+      // Adjust vertical position if menu goes off top edge
+      if (newY < 8) {
+        newY = 8;
+      }
+      
+      // Apply adjusted position
+      if (newX !== contextMenu.x || newY !== contextMenu.y) {
+        menu.style.left = `${newX}px`;
+        menu.style.top = `${newY}px`;
+      }
+    }
+  }, [contextMenu.show, contextMenu.x, contextMenu.y]);
 
   // Sync selectionMode with prop
   useEffect(() => {
@@ -207,7 +244,7 @@ export function SessionList({ sessions, activeDirectory, onSelect, onDeleteSessi
           <button
             type="button"
             className="selection-back-btn"
-            onClick={onEnterSelectionMode}
+            onClick={onExitSelectionMode}
             aria-label="Exit selection mode"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">

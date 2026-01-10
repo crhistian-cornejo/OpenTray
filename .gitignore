@@ -39,3 +39,4 @@ src-tauri/gen/
 *.key
 tauri-*.key
 .keys/
+opencode.json

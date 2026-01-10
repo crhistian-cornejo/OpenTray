@@ -15,6 +15,7 @@ permissions:
 
 env:
   CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: short
 
 jobs:
   create-release:
@@ -31,20 +32,19 @@ jobs:
           draft: true
           generate_release_notes: true
 
-  build-tauri:
+  build-macos:
     needs: create-release
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
-            target: aarch64-apple-darwin
-          - platform: macos-latest
-            target: x86_64-apple-darwin
-          - platform: windows-latest
-            target: x86_64-pc-windows-msvc
+          - target: aarch64-apple-darwin
+            arch: aarch64
+          - target: x86_64-apple-darwin
+            arch: x64
 
-    runs-on: ${{ matrix.platform }}
+    runs-on: macos-latest
+    name: Build macOS (${{ matrix.arch }})
     steps:
       - uses: actions/checkout@v4
 
@@ -68,6 +68,60 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      # Optional: Apple code signing (requires Apple Developer account)
+      # Uncomment and add these secrets to sign and notarize the app:
+      # - APPLE_CERTIFICATE: Base64 encoded .p12 certificate
+      # - APPLE_CERTIFICATE_PASSWORD: Password for the .p12 certificate
+      # - APPLE_SIGNING_IDENTITY: Certificate name (e.g., "Developer ID Application: Your Name (XXXXXXXXXX)")
+      # - APPLE_ID: Apple ID email
+      # - APPLE_PASSWORD: App-specific password
+      # - APPLE_TEAM_ID: Team ID
+
+      - name: Build and upload
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # Uncomment for Apple notarization:
+          # APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          # APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          # APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          # APPLE_ID: ${{ secrets.APPLE_ID }}
+          # APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          releaseId: ${{ needs.create-release.outputs.release_id }}
+          tauriScript: npx tauri
+          args: --target ${{ matrix.target }} -c src-tauri/tauri.prod.conf.json
+
+  build-windows:
+    needs: create-release
+    runs-on: windows-latest
+    name: Build Windows (x64)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          shared-key: x86_64-pc-windows-msvc
+
+      - name: Install frontend dependencies
+        run: npm ci
+
       - name: Build and upload
         uses: tauri-apps/tauri-action@v0
         env:
@@ -77,11 +131,11 @@ jobs:
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
           tauriScript: npx tauri
-          args: --target ${{ matrix.target }} -c src-tauri/tauri.prod.conf.json
+          args: --target x86_64-pc-windows-msvc -c src-tauri/tauri.prod.conf.json
           updaterJsonPreferNsis: true
 
   publish-release:
-    needs: [create-release, build-tauri]
+    needs: [create-release, build-macos, build-windows]
     runs-on: ubuntu-latest
     steps:
       - name: Publish Release

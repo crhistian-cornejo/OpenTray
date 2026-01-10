@@ -21,6 +21,7 @@ function App() {
   const [initialized, setInitialized] = useState(false);
   const [view, setView] = useState<View>("instances");
   const [showTodoList, setShowTodoList] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
   const { theme, setTheme } = useTheme();
   const {
     updateAvailable,
@@ -123,8 +124,8 @@ function App() {
     await bulkDeleteArchivedSessions(sessionsToDelete);
   };
 
-  const enterSelectionMode = () => {
-    document.querySelector('.selection-toggle-btn')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  const toggleSelectionMode = () => {
+    setSelectionMode(prev => !prev);
   };
 
   // Compute header props
@@ -140,7 +141,7 @@ function App() {
   };
 
   return (
-    <div className="app">
+    <div className={`app ${initialized ? 'visible' : ''}`}>
       {updateAvailable && updateInfo && (
         <UpdateBanner
           updateInfo={updateInfo}
@@ -172,7 +173,7 @@ function App() {
         onChat={() => setView("chat")}
         onTodos={() => setShowTodoList(true)}
         onArchived={() => setView("archived")}
-        onSelect={enterSelectionMode}
+        onSelect={toggleSelectionMode}
         onNewSession={handleNewSession}
       />
 
@@ -194,6 +195,8 @@ function App() {
             onArchiveSession={archiveSession}
             onBulkArchive={bulkArchiveSessions}
             onBulkDelete={bulkDeleteSessions}
+            selectionMode={selectionMode}
+            onExitSelectionMode={() => setSelectionMode(false)}
           />
         )}
 
@@ -228,6 +231,8 @@ function App() {
             onUnarchive={handleUnarchive}
             onDelete={handleDeleteArchived}
             onBulkDelete={handleBulkDeleteArchived}
+            selectionMode={selectionMode}
+            onExitSelectionMode={() => setSelectionMode(false)}
           />
         )}
       </main>

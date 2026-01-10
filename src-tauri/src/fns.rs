@@ -188,11 +188,52 @@ mod macos {
     pub fn check_is_frontmost() -> bool {
         get_frontmost_app_pid() == app_pid()
     }
+
+    /// Position the permission popup near the tray icon (top right of screen)
+    pub fn position_permission_popup(app_handle: &tauri::AppHandle) {
+        let Some(window) = app_handle.get_webview_window("permission") else {
+            return;
+        };
+
+        let monitor = monitor::get_monitor_with_cursor().unwrap();
+
+        let scale_factor = monitor.scale_factor();
+
+        let visible_area = monitor.visible_area();
+
+        let monitor_pos = visible_area.position().to_logical::<f64>(scale_factor);
+
+        let monitor_size = visible_area.size().to_logical::<f64>(scale_factor);
+
+        let handle: id = window.ns_window().unwrap() as _;
+
+        let mut win_frame: NSRect = unsafe { msg_send![handle, frame] };
+
+        // Position at top of screen, below menubar
+        win_frame.origin.y = (monitor_pos.y + monitor_size.height) - win_frame.size.height;
+
+        // Position near the right side of the screen (where tray icons usually are)
+        // Leave some padding from the edge
+        win_frame.origin.x = monitor_pos.x + monitor_size.width - win_frame.size.width - 16.0;
+
+        let _: () = unsafe { msg_send![handle, setFrame: win_frame display: NO] };
+
+        // Set window level to be above everything
+        unsafe {
+            let _: () = msg_send![handle, setLevel: NSMainMenuWindowLevel + 2];
+        }
+
+        // Set corner radius for the permission popup
+        set_corner_radius(&window, 10.0);
+    }
 }
 
 // Re-export macOS functions when on macOS
 #[cfg(target_os = "macos")]
-pub use macos::{position_panel, setup_panel_listeners, swizzle_to_panel, update_panel_appearance};
+pub use macos::{
+    position_panel, position_permission_popup, setup_panel_listeners, swizzle_to_panel,
+    update_panel_appearance,
+};
 
 /// Update the tray icon with a badge (e.g., "3" for 3 pending items)
 /// This function works on all platforms
@@ -214,7 +255,7 @@ pub fn update_tray_icon_with_badge(
     let mut buf = Vec::new();
     final_icon
         .write_to(&mut std::io::Cursor::new(&mut buf), image::ImageFormat::Png)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        .map_err(|e| std::io::Error::other(e.to_string()))?;
 
     let icon = Image::from_bytes(&buf)?;
 
