@@ -207,6 +207,47 @@ body {
       background: var(--bg-tertiary);
       color: var(--text-primary);
     }
+    
+    // Primary button style (e.g., New Session)
+    &-primary {
+      background: var(--accent-color);
+      color: white;
+      
+      &:hover {
+        background: var(--accent-color);
+        filter: brightness(1.1);
+        color: white;
+      }
+    }
+    
+    // Tooltip
+    &[data-tooltip] {
+      &::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%) translateY(4px);
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: 500;
+        white-space: nowrap;
+        color: var(--text-primary);
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        box-shadow: var(--shadow-md);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.15s ease, transform 0.15s ease;
+        z-index: 1000;
+      }
+      
+      &:hover::after {
+        opacity: 1;
+        transform: translateX(-50%) translateY(6px);
+      }
+    }
   }
   
   &-title {
@@ -1058,7 +1099,7 @@ body {
 // Settings
 // --------------------------------------------
 .settings {
-  padding: 16px;
+  padding: 16px 16px 0 16px;
   
   &-section {
     margin-bottom: 24px;
@@ -1188,6 +1229,7 @@ body {
   &-content {
     max-height: calc(100vh - 200px);
     overflow-y: auto;
+    padding-bottom: 0;
   }
   
   &-model {

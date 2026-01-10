@@ -6,7 +6,6 @@ interface SessionListProps {
   sessions: Session[];
   activeDirectory?: string;
   onSelect: (session: Session) => void;
-  onNewSession?: () => void;
   onDeleteSession?: (session: Session) => void;
   onArchiveSession?: (session: Session) => void;
   onBulkArchive?: (sessions: Session[]) => void;
@@ -64,7 +63,7 @@ function groupSessionsByDirectory(sessions: Session[], activeDirectory?: string)
     });
 }
 
-export function SessionList({ sessions, activeDirectory, onSelect, onNewSession, onDeleteSession, onArchiveSession, onBulkArchive, onBulkDelete, selectionMode = false, onEnterSelectionMode }: SessionListProps) {
+export function SessionList({ sessions, activeDirectory, onSelect, onDeleteSession, onArchiveSession, onBulkArchive, onBulkDelete, selectionMode = false, onEnterSelectionMode }: SessionListProps) {
   const groups = useMemo(() => groupSessionsByDirectory(sessions, activeDirectory), [sessions, activeDirectory]);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
     const initial = new Set<string>();
@@ -259,24 +258,7 @@ export function SessionList({ sessions, activeDirectory, onSelect, onNewSession,
         </div>
       )}
 
-      {onNewSession && (
-        <button
-          type="button"
-          className="list-item new-session-btn"
-          onClick={onNewSession}
-        >
-          <div className="list-item-icon">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-          </div>
-          <div className="list-item-content">
-            <span className="list-item-title">New Session</span>
-            <span className="list-item-subtitle">Start a new conversation</span>
-          </div>
-        </button>
-      )}
-      {sessions.length === 0 && !onNewSession && (
+      {sessions.length === 0 && (
         <div className="empty">
           <p>No sessions yet</p>
         </div>

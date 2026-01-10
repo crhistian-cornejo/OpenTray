@@ -164,6 +164,7 @@ function App() {
         showArchived={view === "sessions"}
         archivedCount={archivedSessions.length}
         showSelect={view === "sessions" || view === "archived"}
+        showNewSession={view === "sessions"}
         onBack={handleBack}
         onRefresh={refresh}
         onSettings={() => setView("settings")}
@@ -172,6 +173,7 @@ function App() {
         onTodos={() => setShowTodoList(true)}
         onArchived={() => setView("archived")}
         onSelect={enterSelectionMode}
+        onNewSession={handleNewSession}
       />
 
       <main className="content">
@@ -188,7 +190,6 @@ function App() {
             sessions={sessions}
             activeDirectory={selectedInstance?.directory}
             onSelect={handleSessionSelect}
-            onNewSession={handleNewSession}
             onDeleteSession={removeSession}
             onArchiveSession={archiveSession}
             onBulkArchive={bulkArchiveSessions}
