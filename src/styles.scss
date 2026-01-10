@@ -14,7 +14,7 @@
   --text-secondary: #86868b;
   --text-tertiary: #aeaeb2;
   --border-color: #d2d2d7;
-  --accent-color: #0071e3;
+  --accent-color: #034cff;
   --success-color: #34c759;
   --warning-color: #ff9500;
   --error-color: #ff3b30;
@@ -2084,4 +2084,202 @@ body {
 .text-muted {
   color: var(--text-tertiary);
   font-style: italic;
+}
+
+// --------------------------------------------
+// Empty State
+// --------------------------------------------
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  text-align: center;
+  
+  &-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    margin-bottom: 16px;
+    color: var(--text-tertiary);
+    background: var(--bg-tertiary);
+    border-radius: 50%;
+  }
+  
+  &-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+  }
+  
+  &-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 0 0 16px 0;
+    line-height: 1.5;
+    max-width: 240px;
+    
+    strong { color: var(--accent-color); }
+  }
+  
+  &-btn {
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    color: white;
+    background: var(--accent-color);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    
+    &:hover {
+      filter: brightness(1.1);
+    }
+  }
+}
+
+// --------------------------------------------
+// Config Editor
+// --------------------------------------------
+.config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.config-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.config-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.config-file-icon {
+  color: var(--text-secondary);
+}
+
+.config-filename {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.config-badge {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  
+  &.new {
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--success-color);
+  }
+  
+  &.modified {
+    background: rgba(251, 191, 36, 0.15);
+    color: var(--warning-color);
+  }
+}
+
+.config-path {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-family: ui-monospace, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.config-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--error-color);
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: var(--radius-sm);
+  
+  svg { flex-shrink: 0; }
+}
+
+.config-editor-wrapper {
+  position: relative;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+.config-editor {
+  width: 100%;
+  min-height: 280px;
+  max-height: 400px;
+  padding: 12px;
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  resize: vertical;
+  
+  &:focus {
+    outline: none;
+  }
+  
+  &::placeholder {
+    color: var(--text-tertiary);
+  }
+}
+
+.config-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.config-btn {
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  &.primary {
+    background: var(--accent-color);
+    color: white;
+    
+    &:hover:not(:disabled) {
+      filter: brightness(1.1);
+    }
+  }
+  
+  &.secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    
+    &:hover:not(:disabled) {
+      background: var(--border-color);
+    }
+  }
 }

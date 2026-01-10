@@ -396,9 +396,27 @@ export function SettingsView({
         {activeTab === "mcp" && (
           <div className="settings-section">
             {combinedMcps.length === 0 ? (
-              <div className="settings-empty">
-                <span>No MCP servers configured</span>
-                <p>Add MCP servers in the Config tab</p>
+              <div className="empty-state">
+                <div className="empty-state-icon">
+                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                    <rect x="8" y="12" width="32" height="24" rx="4" stroke="currentColor" strokeWidth="2"/>
+                    <circle cx="16" cy="24" r="3" stroke="currentColor" strokeWidth="2"/>
+                    <circle cx="32" cy="24" r="3" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M19 24h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </div>
+                <h3 className="empty-state-title">No MCP Servers</h3>
+                <p className="empty-state-text">
+                  MCP servers extend OpenCode with additional capabilities.
+                  Configure them in the <strong>Config</strong> tab.
+                </p>
+                <button 
+                  type="button" 
+                  className="empty-state-btn"
+                  onClick={() => setActiveTab("config")}
+                >
+                  Open Config
+                </button>
               </div>
             ) : (
               <div className="mcp-list">
@@ -445,63 +463,88 @@ export function SettingsView({
         {/* Config Tab */}
         {activeTab === "config" && (
           <div className="settings-section config-section">
-            <div className="config-header">
-              <div className="config-info">
-                <span className="config-filename">opencode.json</span>
-                {configExists === false && (
-                  <span className="config-badge new">New</span>
-                )}
-                {configDirty && (
-                  <span className="config-badge modified">Modified</span>
-                )}
+            {!instance ? (
+              <div className="empty-state">
+                <div className="empty-state-icon">
+                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                    <path d="M12 8h24v32H12z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M18 16h12M18 24h12M18 32h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </div>
+                <h3 className="empty-state-title">No Instance Selected</h3>
+                <p className="empty-state-text">
+                  Select an OpenCode instance first to edit its configuration file.
+                </p>
               </div>
-              {configPath && (
-                <span className="config-path" title={configPath}>
-                  {instance?.directory}
-                </span>
-              )}
-            </div>
+            ) : (
+              <>
+                <div className="config-header">
+                  <div className="config-info">
+                    <svg className="config-file-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path d="M4 2h5l3 3v9H4z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M9 2v3h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span className="config-filename">opencode.json</span>
+                    {configExists === false && (
+                      <span className="config-badge new">New</span>
+                    )}
+                    {configDirty && (
+                      <span className="config-badge modified">Modified</span>
+                    )}
+                  </div>
+                  {configPath && (
+                    <span className="config-path" title={configPath}>
+                      {instance.directory}
+                    </span>
+                  )}
+                </div>
 
-            {configError && (
-              <div className="config-error">
-                {configError}
-              </div>
+                {configError && (
+                  <div className="config-error">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                      <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5"/>
+                      <path d="M7 4v3M7 9v1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                    {configError}
+                  </div>
+                )}
+
+                <div className="config-editor-wrapper">
+                  <textarea
+                    className="config-editor"
+                    value={configContent}
+                    onChange={(e) => {
+                      setConfigContent(e.target.value);
+                      setConfigDirty(true);
+                      setConfigError(null);
+                    }}
+                    spellCheck={false}
+                    placeholder={configExists === null ? "Loading..." : "Enter JSON configuration..."}
+                  />
+                </div>
+
+                <div className="config-actions">
+                  <button
+                    type="button"
+                    className="config-btn secondary"
+                    onClick={() => {
+                      setConfigContent(DEFAULT_OPENCODE_CONFIG);
+                      setConfigDirty(true);
+                    }}
+                  >
+                    Reset
+                  </button>
+                  <button
+                    type="button"
+                    className="config-btn primary"
+                    onClick={handleSaveConfig}
+                    disabled={configSaving || !configDirty}
+                  >
+                    {configSaving ? "Saving..." : configExists ? "Save" : "Create"}
+                  </button>
+                </div>
+              </>
             )}
-
-            <div className="config-editor-wrapper">
-              <textarea
-                className="config-editor"
-                value={configContent}
-                onChange={(e) => {
-                  setConfigContent(e.target.value);
-                  setConfigDirty(true);
-                  setConfigError(null);
-                }}
-                spellCheck={false}
-                placeholder="Loading..."
-              />
-            </div>
-
-            <div className="config-actions">
-              <button
-                type="button"
-                className="config-btn secondary"
-                onClick={() => {
-                  setConfigContent(DEFAULT_OPENCODE_CONFIG);
-                  setConfigDirty(true);
-                }}
-              >
-                Reset
-              </button>
-              <button
-                type="button"
-                className="config-btn primary"
-                onClick={handleSaveConfig}
-                disabled={configSaving || !configDirty}
-              >
-                {configSaving ? "Saving..." : configExists ? "Save" : "Create"}
-              </button>
-            </div>
           </div>
         )}
       </div>
