@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use std::sync::Once;
 
+use tauri::Manager;
 #[cfg(target_os = "macos")]
 use tauri_nspanel::ManagerExt;
 use tauri_plugin_notification::NotificationExt;
