@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+target/
+
+# Build outputs
+dist/
+src-tauri/target/
+
+# Lock files (optional - you may want to commit these)
+# package-lock.json
+# bun.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Tauri
+src-tauri/gen/
+
+# Keys - NEVER commit these
+*.pem
+*.p12
+*.key
+tauri-*.key
+.keys/
