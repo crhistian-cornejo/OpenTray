@@ -88,17 +88,21 @@ export function useUpdater(): UseUpdaterReturn {
       setProgress(0);
       setError(null);
 
+      let downloaded = 0;
+      let contentLength = 0;
+
       // Download the update
       await update.downloadAndInstall((event) => {
         switch (event.event) {
           case "Started":
+            contentLength = (event.data as { contentLength?: number }).contentLength ?? 0;
             setProgress(0);
             break;
           case "Progress": {
-            const contentLength = event.data.contentLength ?? 0;
-            const chunkLength = event.data.chunkLength;
+            const chunkLength = (event.data as { chunkLength: number }).chunkLength;
+            downloaded += chunkLength;
             if (contentLength > 0) {
-              setProgress((prev) => Math.min(prev + (chunkLength / contentLength) * 100, 100));
+              setProgress(Math.min((downloaded / contentLength) * 100, 100));
             }
             break;
           }
