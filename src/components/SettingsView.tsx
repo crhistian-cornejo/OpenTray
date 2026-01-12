@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { Theme, OpenCodeConfig, MCPServer, OpenCodeInstance, FullProvider } from "../lib/types";
+import { useSettings } from "../hooks";
 
-type SettingsTab = "general" | "providers" | "mcp" | "config";
+type SettingsTab = "general" | "app" | "providers" | "mcp" | "config";
 
 // MCP config types from opencode.json
 interface LocalMCPConfig {
@@ -51,6 +52,9 @@ export function SettingsView({
   const [expandedProvider, setExpandedProvider] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // App settings hook
+  const { settings: appSettings, updateSettings } = useSettings();
   
   // Config editor state
   const [configExists, setConfigExists] = useState<boolean | null>(null);
@@ -216,6 +220,7 @@ export function SettingsView({
 
   const tabs: { id: SettingsTab; label: string }[] = [
     { id: "general", label: "General" },
+    { id: "app", label: "App" },
     { id: "providers", label: "Providers" },
     { id: "mcp", label: "MCP" },
     { id: "config", label: "Config" },
@@ -325,6 +330,75 @@ export function SettingsView({
                   </select>
                 </div>
               </div>
+            </div>
+          </>
+        )}
+
+        {/* App Tab */}
+        {activeTab === "app" && (
+          <>
+            <div className="settings-section">
+              <h3 className="settings-section-title">Startup</h3>
+              <div className="settings-item">
+                <span className="settings-label">Launch at Login</span>
+                <div className="settings-control">
+                  <label className="toggle">
+                    <input
+                      type="checkbox"
+                      checked={appSettings.autostart}
+                      onChange={(e) => updateSettings({ autostart: e.target.checked })}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="settings-section">
+              <h3 className="settings-section-title">Notifications</h3>
+              <div className="settings-item">
+                <span className="settings-label">Sound Effects</span>
+                <div className="settings-control">
+                  <label className="toggle">
+                    <input
+                      type="checkbox"
+                      checked={appSettings.sound_enabled}
+                      onChange={(e) => updateSettings({ sound_enabled: e.target.checked })}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="settings-section">
+              <h3 className="settings-section-title">Display</h3>
+              <div className="settings-item">
+                <span className="settings-label">Compact Mode</span>
+                <div className="settings-control">
+                  <label className="toggle">
+                    <input
+                      type="checkbox"
+                      checked={appSettings.compact_mode}
+                      onChange={(e) => updateSettings({ compact_mode: e.target.checked })}
+                    />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="settings-section">
+              <h3 className="settings-section-title">Keyboard Shortcut</h3>
+              <div className="settings-item">
+                <span className="settings-label">Toggle OpenTray</span>
+                <span className="settings-value settings-shortcut">
+                  {appSettings.global_shortcut}
+                </span>
+              </div>
+              <p className="settings-hint">
+                Use this shortcut to quickly show or hide OpenTray from anywhere.
+              </p>
             </div>
           </>
         )}

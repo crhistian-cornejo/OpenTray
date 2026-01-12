@@ -1,7 +1,8 @@
 use tauri::{
     image::Image,
-    tray::{MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent},
-    AppHandle,
+    menu::{MenuBuilder, MenuItemBuilder},
+    tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent},
+    AppHandle, Emitter,
 };
 
 #[cfg(not(target_os = "macos"))]
@@ -22,22 +23,76 @@ pub fn create(app_handle: &AppHandle) -> tauri::Result<TrayIcon> {
     #[cfg(not(target_os = "macos"))]
     let icon = Image::from_bytes(include_bytes!("../icons/logo-32x32.png"))?;
 
-    let mut builder = TrayIconBuilder::with_id("tray")
-        .icon(icon)
-        .tooltip("OpenTray");
+    // Build context menu
+    let show_item = MenuItemBuilder::with_id("show", "Show OpenTray").build(app_handle)?;
+    let new_session_item =
+        MenuItemBuilder::with_id("new_session", "New Session").build(app_handle)?;
+    let separator1 = tauri::menu::PredefinedMenuItem::separator(app_handle)?;
+    let refresh_item = MenuItemBuilder::with_id("refresh", "Refresh").build(app_handle)?;
+    let settings_item = MenuItemBuilder::with_id("settings", "Settings...").build(app_handle)?;
+    let separator2 = tauri::menu::PredefinedMenuItem::separator(app_handle)?;
+    let quit_item = MenuItemBuilder::with_id("quit", "Quit OpenTray").build(app_handle)?;
 
-    // Only use template mode on macOS (adapts to light/dark mode)
+    let menu = MenuBuilder::new(app_handle)
+        .item(&show_item)
+        .item(&new_session_item)
+        .item(&separator1)
+        .item(&refresh_item)
+        .item(&settings_item)
+        .item(&separator2)
+        .item(&quit_item)
+        .build()?;
+
     #[cfg(target_os = "macos")]
-    {
-        builder = builder.icon_as_template(true);
-    }
+    let builder = TrayIconBuilder::with_id("tray")
+        .icon(icon)
+        .tooltip("OpenTray")
+        .icon_as_template(true)
+        .menu(&menu)
+        .show_menu_on_left_click(false);
+
+    #[cfg(not(target_os = "macos"))]
+    let builder = TrayIconBuilder::with_id("tray")
+        .icon(icon)
+        .tooltip("OpenTray")
+        .menu(&menu)
+        .show_menu_on_left_click(false);
 
     builder
+        .on_menu_event(|app, event| {
+            match event.id().as_ref() {
+                "show" => {
+                    crate::command::toggle_panel_internal(app);
+                }
+                "new_session" => {
+                    // Emit event to frontend to create new session
+                    let _ = app.emit("tray-new-session", ());
+                    crate::command::show_panel_internal(app);
+                }
+                "refresh" => {
+                    // Emit event to frontend to refresh
+                    let _ = app.emit("tray-refresh", ());
+                }
+                "settings" => {
+                    // Emit event to frontend to show settings
+                    let _ = app.emit("tray-settings", ());
+                    crate::command::show_panel_internal(app);
+                }
+                "quit" => {
+                    app.exit(0);
+                }
+                _ => {}
+            }
+        })
         .on_tray_icon_event(|tray, event| {
             let app_handle = tray.app_handle();
 
-            if let TrayIconEvent::Click { button_state, .. } = event {
-                if button_state == MouseButtonState::Up {
+            match event {
+                TrayIconEvent::Click {
+                    button: MouseButton::Left,
+                    button_state: MouseButtonState::Up,
+                    ..
+                } => {
                     #[cfg(target_os = "macos")]
                     {
                         let panel = app_handle.get_webview_panel("main").unwrap();
@@ -58,13 +113,45 @@ pub fn create(app_handle: &AppHandle) -> tauri::Result<TrayIcon> {
                             if window.is_visible().unwrap_or(false) {
                                 let _ = window.hide();
                             } else {
+                                // Position window near system tray
+                                position_window_near_tray(&window);
                                 let _ = window.show();
                                 let _ = window.set_focus();
                             }
                         }
                     }
                 }
+                _ => {}
             }
         })
         .build(app_handle)
+}
+
+/// Position window near the system tray (Windows)
+#[cfg(not(target_os = "macos"))]
+pub fn position_window_near_tray(window: &tauri::WebviewWindow) {
+    use tauri::PhysicalPosition;
+
+    // Try to get the primary monitor
+    if let Ok(Some(monitor)) = window.primary_monitor() {
+        let monitor_size = monitor.size();
+        let monitor_position = monitor.position();
+        let scale = monitor.scale_factor();
+
+        if let Ok(win_size) = window.outer_size() {
+            // Position at bottom-right of screen, above taskbar (assuming 40px taskbar)
+            let taskbar_height = 48.0 * scale;
+            let padding = 12.0 * scale;
+
+            let x = (monitor_position.x as f64 + monitor_size.width as f64
+                - win_size.width as f64
+                - padding) as i32;
+            let y = (monitor_position.y as f64 + monitor_size.height as f64
+                - win_size.height as f64
+                - taskbar_height
+                - padding) as i32;
+
+            let _ = window.set_position(PhysicalPosition::new(x, y));
+        }
+    }
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import {
   Header,
   InstanceList,
@@ -79,6 +80,33 @@ function App() {
       setView("sessions");
     }
   }, [selectedInstance, view]);
+
+  // Listen for tray menu events
+  useEffect(() => {
+    const unlistenNewSession = listen("tray-new-session", async () => {
+      if (selectedInstance) {
+        const session = await createNewSession();
+        if (session) {
+          selectSession(session);
+          setView("chat");
+        }
+      }
+    });
+
+    const unlistenRefresh = listen("tray-refresh", () => {
+      refresh();
+    });
+
+    const unlistenSettings = listen("tray-settings", () => {
+      setView("settings");
+    });
+
+    return () => {
+      unlistenNewSession.then((fn) => fn());
+      unlistenRefresh.then((fn) => fn());
+      unlistenSettings.then((fn) => fn());
+    };
+  }, [selectedInstance, refresh, createNewSession, selectSession]);
 
   const handleInstanceSelect = (instance: typeof instances[0]) => {
     selectInstance(instance);

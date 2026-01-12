@@ -1359,6 +1359,80 @@ body {
     
     svg { color: var(--text-tertiary); }
   }
+  
+  &-shortcut {
+    font-family: "IBM Plex Mono", "IBM Plex Mono Fallback", ui-monospace, monospace;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+  }
+  
+  &-hint {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    line-height: 1.5;
+    margin: 4px 0 0 0;
+    padding: 0;
+  }
+}
+
+// Toggle Switch
+.toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  
+  input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  &-slider {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    
+    &::before {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 14px;
+      height: 14px;
+      background: var(--text-secondary);
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+  }
+  
+  input:checked + &-slider {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    
+    &::before {
+      transform: translateX(16px);
+      background: white;
+    }
+  }
+  
+  input:focus + &-slider {
+    box-shadow: 0 0 0 2px rgba(3, 76, 255, 0.2);
+  }
+  
+  &:hover .toggle-slider {
+    border-color: var(--accent-color);
+  }
 }
 
 // Model Selector

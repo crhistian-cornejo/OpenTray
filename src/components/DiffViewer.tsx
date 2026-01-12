@@ -58,11 +58,23 @@ function getLanguage(filename: string): string {
 
 export function DiffViewer({ diff, maxLines = 100 }: DiffViewerProps) {
   const lines = useMemo<DiffLine[]>(() => {
+    // Handle undefined/null values for before/after
+    const beforeContent = diff.before ?? "";
+    const afterContent = diff.after ?? "";
+    
+    // If both are empty, show a message
+    if (!beforeContent && !afterContent) {
+      return [{
+        type: "header" as const,
+        content: "(No content to display)",
+      }];
+    }
+    
     const patch = structuredPatch(
       diff.file,
       diff.file,
-      diff.before,
-      diff.after,
+      beforeContent,
+      afterContent,
       "",
       "",
       { context: 3 }
@@ -100,6 +112,39 @@ export function DiffViewer({ diff, maxLines = 100 }: DiffViewerProps) {
             newLineNum: newLine++,
           });
         }
+      }
+    }
+
+    // If no hunks were generated but we have content, it means files are identical
+    // or there's an edge case. Show a helpful message.
+    if (result.length === 0) {
+      // For new files (before is empty), show all lines as additions
+      if (!beforeContent && afterContent) {
+        result.push({
+          type: "header",
+          content: "@@ -0,0 +1," + afterContent.split("\n").length + " @@ (New file)",
+        });
+        afterContent.split("\n").forEach((line, idx) => {
+          result.push({
+            type: "add",
+            content: line,
+            newLineNum: idx + 1,
+          });
+        });
+      }
+      // For deleted files (after is empty), show all lines as deletions
+      else if (beforeContent && !afterContent) {
+        result.push({
+          type: "header",
+          content: "@@ -1," + beforeContent.split("\n").length + " +0,0 @@ (File deleted)",
+        });
+        beforeContent.split("\n").forEach((line, idx) => {
+          result.push({
+            type: "remove",
+            content: line,
+            oldLineNum: idx + 1,
+          });
+        });
       }
     }
 

@@ -1,17 +1,25 @@
 {
   "name": "opentray",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "check-certs": "bun scripts/check-certs.ts",
+    "export-cert": "bun scripts/export-cert.ts",
+    "verify-apple-dev": "bun scripts/verify-apple-dev.ts",
+    "build-signed": "bun scripts/build-signed.ts",
+    "build-prod": "NODE_ENV=production bun scripts/build-signed.ts"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.9.1",
+    "@tauri-apps/plugin-autostart": "^2",
+    "@tauri-apps/plugin-clipboard-manager": "^2",
     "@tauri-apps/plugin-dialog": "^2",
+    "@tauri-apps/plugin-global-shortcut": "^2",
     "@tauri-apps/plugin-http": "^2.5.5",
     "@tauri-apps/plugin-process": "^2",
     "@tauri-apps/plugin-updater": "^2",

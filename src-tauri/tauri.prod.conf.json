@@ -57,9 +57,10 @@
     "longDescription": "OpenTray is a menubar application that allows you to monitor and control OpenCode sessions from your system tray.",
     "macOS": {
       "minimumSystemVersion": "10.15",
-      "entitlements": null,
+      "entitlements": "./entitlements.plist",
       "exceptionDomain": null,
       "infoPlist": "Info.plist",
+      "hardenedRuntime": true,
       "dmg": {
         "appPosition": { "x": 180, "y": 170 },
         "applicationFolderPosition": { "x": 480, "y": 170 },
