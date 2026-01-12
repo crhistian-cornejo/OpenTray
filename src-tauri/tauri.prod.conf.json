@@ -76,7 +76,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNGMzM1QUNFMzA2OEM0NEYKUldSUHhHZ3d6bG96UDdodVVhNmZPT2NKR2pnc0MzZjlQbllLaUhRUW5yQ3BwVjdWWGVNcEpVWE4K",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEM0NzU1RDI4NkI3M0QzQUQKUldTdDAzTnJLRjExeEsrcFRJOUpZV0txemZSUXBlemVCUW1EYUllcEZzVFMzMzdzQXJCTlVHcU8K",
       "endpoints": [
         "https://github.com/crhistian-cornejo/OpenTray/releases/latest/download/latest.json"
       ],
