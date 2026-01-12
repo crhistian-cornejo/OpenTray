@@ -158,6 +158,20 @@ pub fn update_tray_icon(
 }
 
 #[tauri::command]
+pub fn update_tray_icon_theme(
+    app_handle: tauri::AppHandle,
+    theme: String,
+) -> Result<(), String> {
+    #[cfg(not(target_os = "macos"))]
+    crate::tray::update_icon_for_theme(&app_handle, &theme).map_err(|e| e.to_string())?;
+    
+    #[cfg(target_os = "macos")]
+    let _ = (app_handle, theme); // Unused on macOS
+
+    Ok(())
+}
+
+#[tauri::command]
 pub fn read_file(path: String) -> Result<String, String> {
     let path = PathBuf::from(path);
     std::fs::read_to_string(&path).map_err(|e| e.to_string())
@@ -293,4 +307,148 @@ pub fn hide_permission_popup(app_handle: tauri::AppHandle) -> Result<(), String>
 pub fn get_pending_permission() -> Result<Option<serde_json::Value>, String> {
     let pending = PENDING_PERMISSION.lock().map_err(|e| e.to_string())?;
     Ok(pending.clone())
+}
+
+// --------------------------------------------
+// Project Files Commands
+// --------------------------------------------
+
+#[derive(serde::Serialize)]
+pub struct ProjectFile {
+    pub path: String,
+    pub name: String,
+    pub is_dir: bool,
+}
+
+/// List project files with optional search query
+/// Uses gitignore rules and common ignore patterns
+#[tauri::command]
+pub fn list_project_files(directory: String, query: String, limit: usize) -> Result<Vec<ProjectFile>, String> {
+    use std::collections::HashSet;
+    
+    let root = PathBuf::from(&directory);
+    if !root.exists() || !root.is_dir() {
+        return Err("Directory does not exist".to_string());
+    }
+    
+    let query_lower = query.to_lowercase();
+    let mut files: Vec<ProjectFile> = Vec::new();
+    let mut visited: HashSet<PathBuf> = HashSet::new();
+    
+    // Common directories to ignore
+    let ignore_dirs: HashSet<&str> = [
+        "node_modules", ".git", ".svn", ".hg", "target", "dist", "build",
+        ".next", ".nuxt", ".output", "__pycache__", ".pytest_cache",
+        "venv", ".venv", "env", ".env", ".idea", ".vscode",
+        "coverage", ".nyc_output", ".cache", ".parcel-cache",
+        "vendor", "bower_components", ".gradle", ".m2",
+    ].iter().cloned().collect();
+    
+    // Common files to ignore
+    let ignore_files: HashSet<&str> = [
+        ".DS_Store", "Thumbs.db", ".gitignore", ".gitattributes",
+        "package-lock.json", "yarn.lock", "pnpm-lock.yaml",
+        "Cargo.lock", "poetry.lock", "composer.lock",
+    ].iter().cloned().collect();
+    
+    #[allow(clippy::too_many_arguments)]
+    fn walk_dir(
+        dir: &PathBuf,
+        root: &PathBuf,
+        query: &str,
+        files: &mut Vec<ProjectFile>,
+        visited: &mut HashSet<PathBuf>,
+        ignore_dirs: &HashSet<&str>,
+        ignore_files: &HashSet<&str>,
+        limit: usize,
+        depth: usize,
+    ) {
+        if files.len() >= limit || depth > 10 {
+            return;
+        }
+        
+        let entries = match std::fs::read_dir(dir) {
+            Ok(e) => e,
+            Err(_) => return,
+        };
+        
+        for entry in entries.flatten() {
+            if files.len() >= limit {
+                return;
+            }
+            
+            let path = entry.path();
+            let canonical = path.canonicalize().unwrap_or_else(|_| path.clone());
+            
+            if visited.contains(&canonical) {
+                continue;
+            }
+            visited.insert(canonical);
+            
+            let file_name = match entry.file_name().into_string() {
+                Ok(n) => n,
+                Err(_) => continue,
+            };
+            
+            // Skip hidden files/dirs (except we want to show them if explicitly searched)
+            if file_name.starts_with('.') && !query.starts_with('.') {
+                continue;
+            }
+            
+            let is_dir = path.is_dir();
+            
+            // Skip ignored directories
+            if is_dir && ignore_dirs.contains(file_name.as_str()) {
+                continue;
+            }
+            
+            // Skip ignored files
+            if !is_dir && ignore_files.contains(file_name.as_str()) {
+                continue;
+            }
+            
+            // Get relative path from project root
+            let relative_path = path.strip_prefix(root)
+                .map(|p| p.to_string_lossy().to_string().replace('\\', "/"))
+                .unwrap_or_else(|_| file_name.clone());
+            
+            // Check if matches query (fuzzy match on path or name)
+            let matches = query.is_empty() || 
+                file_name.to_lowercase().contains(query) ||
+                relative_path.to_lowercase().contains(query);
+            
+            if matches && !is_dir {
+                files.push(ProjectFile {
+                    path: relative_path,
+                    name: file_name.clone(),
+                    is_dir,
+                });
+            }
+            
+            // Recurse into directories
+            if is_dir {
+                walk_dir(
+                    &path, root, query, files, visited, 
+                    ignore_dirs, ignore_files, limit, depth + 1
+                );
+            }
+        }
+    }
+    
+    walk_dir(
+        &root, &root, &query_lower, &mut files, &mut visited,
+        &ignore_dirs, &ignore_files, limit, 0
+    );
+    
+    // Sort by path length (shorter = more relevant) then alphabetically
+    files.sort_by(|a, b| {
+        let len_cmp = a.path.len().cmp(&b.path.len());
+        if len_cmp == std::cmp::Ordering::Equal {
+            a.path.to_lowercase().cmp(&b.path.to_lowercase())
+        } else {
+            len_cmp
+        }
+    });
+    
+    Ok(files)
 }

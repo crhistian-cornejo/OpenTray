@@ -218,10 +218,41 @@ export async function sendMessage(
         parts: [{ type: "text", text: message }],
       }),
     });
-    
+
     return response.ok;
   } catch (error) {
     console.error("Error sending message:", error);
+    return false;
+  }
+}
+
+// Change the model for a session (sends a prompt with model parameter)
+// The model change takes effect when you send the next message
+export async function changeSessionModel(
+  instance: OpenCodeInstance,
+  sessionId: string,
+  providerID: string,
+  modelID: string
+): Promise<boolean> {
+  try {
+    const response = await fetch(`${instance.url}/session/${sessionId}/message`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-opencode-directory": instance.directory,
+      },
+      body: JSON.stringify({
+        model: {
+          providerID,
+          modelID,
+        },
+        parts: [{ type: "text", text: "/model" }],
+      }),
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.error("Error changing model:", error);
     return false;
   }
 }

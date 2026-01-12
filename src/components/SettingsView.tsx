@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { Theme, OpenCodeConfig, MCPServer, OpenCodeInstance, FullProvider } from "../lib/types";
 import { useSettings } from "../hooks";
@@ -55,6 +55,11 @@ export function SettingsView({
   
   // App settings hook
   const { settings: appSettings, updateSettings } = useSettings();
+
+  // Shortcut editing state
+  const [isEditingShortcut, setIsEditingShortcut] = useState(false);
+  const [shortcutKeys, setShortcutKeys] = useState<string[]>([]);
+  const shortcutInputRef = useRef<HTMLButtonElement>(null);
   
   // Config editor state
   const [configExists, setConfigExists] = useState<boolean | null>(null);
@@ -216,6 +221,71 @@ export function SettingsView({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Handle shortcut key capture
+  const handleShortcutKeyDown = (e: React.KeyboardEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const key = e.key;
+    const modifiers: string[] = [];
+
+    // Detect platform
+    const isMac = (window as unknown as { __OPENTRAY__?: { platform?: string } }).__OPENTRAY__?.platform === "macos";
+
+    if (e.metaKey && isMac) modifiers.push("Cmd");
+    if (e.ctrlKey && !isMac) modifiers.push("Ctrl");
+    if (e.ctrlKey && isMac) modifiers.push("Ctrl");
+    if (e.altKey) modifiers.push("Alt");
+    if (e.shiftKey) modifiers.push("Shift");
+
+    // Map key names
+    let keyName = key;
+    if (key === " ") keyName = "Space";
+    else if (key.length === 1) keyName = key.toUpperCase();
+    else if (key === "ArrowUp") keyName = "Up";
+    else if (key === "ArrowDown") keyName = "Down";
+    else if (key === "ArrowLeft") keyName = "Left";
+    else if (key === "ArrowRight") keyName = "Right";
+    else if (key === "Escape") {
+      setIsEditingShortcut(false);
+      setShortcutKeys([]);
+      return;
+    }
+
+    // Ignore modifier-only keys
+    if (["Meta", "Control", "Alt", "Shift"].includes(key)) {
+      setShortcutKeys(modifiers);
+      return;
+    }
+
+    // Need at least one modifier + a key
+    if (modifiers.length > 0) {
+      const newShortcut = [...modifiers, keyName].join("+");
+      setShortcutKeys([...modifiers, keyName]);
+
+      // Save the shortcut and update it in real-time
+      updateSettings({ global_shortcut: newShortcut });
+
+      // Update the global shortcut immediately (no restart required)
+      invoke("update_global_shortcut", { shortcutStr: newShortcut })
+        .catch(err => console.error("Failed to update shortcut:", err));
+
+      setIsEditingShortcut(false);
+      setShortcutKeys([]);
+    }
+  };
+
+  const handleShortcutBlur = () => {
+    setIsEditingShortcut(false);
+    setShortcutKeys([]);
+  };
+
+  const startEditingShortcut = () => {
+    setIsEditingShortcut(true);
+    setShortcutKeys([]);
+    setTimeout(() => shortcutInputRef.current?.focus(), 0);
   };
 
   const tabs: { id: SettingsTab; label: string }[] = [
@@ -392,12 +462,28 @@ export function SettingsView({
               <h3 className="settings-section-title">Keyboard Shortcut</h3>
               <div className="settings-item">
                 <span className="settings-label">Toggle OpenTray</span>
-                <span className="settings-value settings-shortcut">
-                  {appSettings.global_shortcut}
-                </span>
+                {isEditingShortcut ? (
+                  <button
+                    ref={shortcutInputRef}
+                    type="button"
+                    className="settings-shortcut-input editing"
+                    onKeyDown={handleShortcutKeyDown}
+                    onBlur={handleShortcutBlur}
+                  >
+                    {shortcutKeys.length > 0 ? shortcutKeys.join("+") : "Press keys..."}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="settings-shortcut-input"
+                    onClick={startEditingShortcut}
+                  >
+                    {appSettings.global_shortcut}
+                  </button>
+                )}
               </div>
               <p className="settings-hint">
-                Use this shortcut to quickly show or hide OpenTray from anywhere.
+                Click to change. Press Escape to cancel.
               </p>
             </div>
           </>

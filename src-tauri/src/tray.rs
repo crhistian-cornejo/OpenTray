@@ -15,13 +15,14 @@ use tauri_nspanel::ManagerExt;
 use crate::fns::position_panel;
 
 pub fn create(app_handle: &AppHandle) -> tauri::Result<TrayIcon> {
-    // Use simplified monochrome icon for macOS (template icon)
-    // Use full color logo for Windows
+    // Use PNG icon for tray - SVG is not supported by Tauri
+    // macOS: Use template icon (monochrome) - system auto-adapts to theme
+    // Windows/Linux: Use colored icon, manually switch based on theme
     #[cfg(target_os = "macos")]
-    let icon = Image::from_bytes(include_bytes!("../icons/tray.png"))?;
+    let icon = Image::from_bytes(include_bytes!("../icons/tray-template.png"))?;
 
     #[cfg(not(target_os = "macos"))]
-    let icon = Image::from_bytes(include_bytes!("../icons/logo-32x32.png"))?;
+    let icon = Image::from_bytes(include_bytes!("../icons/tray-dark.png"))?;
 
     // Build context menu
     let show_item = MenuItemBuilder::with_id("show", "Show OpenTray").build(app_handle)?;
@@ -87,41 +88,39 @@ pub fn create(app_handle: &AppHandle) -> tauri::Result<TrayIcon> {
         .on_tray_icon_event(|tray, event| {
             let app_handle = tray.app_handle();
 
-            match event {
-                TrayIconEvent::Click {
-                    button: MouseButton::Left,
-                    button_state: MouseButtonState::Up,
-                    ..
-                } => {
-                    #[cfg(target_os = "macos")]
-                    {
-                        let panel = app_handle.get_webview_panel("main").unwrap();
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
+                #[cfg(target_os = "macos")]
+                {
+                    let panel = app_handle.get_webview_panel("main").unwrap();
 
-                        if panel.is_visible() {
-                            panel.order_out(None);
-                            return;
-                        }
-
-                        position_panel(app_handle, 0.0);
-                        panel.show();
+                    if panel.is_visible() {
+                        panel.order_out(None);
+                        return;
                     }
 
-                    #[cfg(not(target_os = "macos"))]
-                    {
-                        // On Windows, toggle the main window
-                        if let Some(window) = app_handle.get_webview_window("main") {
-                            if window.is_visible().unwrap_or(false) {
-                                let _ = window.hide();
-                            } else {
-                                // Position window near system tray
-                                position_window_near_tray(&window);
-                                let _ = window.show();
-                                let _ = window.set_focus();
-                            }
+                    position_panel(app_handle, 0.0);
+                    panel.show();
+                }
+
+                #[cfg(not(target_os = "macos"))]
+                {
+                    // On Windows, toggle the main window
+                    if let Some(window) = app_handle.get_webview_window("main") {
+                        if window.is_visible().unwrap_or(false) {
+                            let _ = window.hide();
+                        } else {
+                            // Position window near system tray
+                            position_window_near_tray(&window);
+                            let _ = window.show();
+                            let _ = window.set_focus();
                         }
                     }
                 }
-                _ => {}
             }
         })
         .build(app_handle)
@@ -154,4 +153,26 @@ pub fn position_window_near_tray(window: &tauri::WebviewWindow) {
             let _ = window.set_position(PhysicalPosition::new(x, y));
         }
     }
+}
+
+/// Update tray icon based on system theme (Windows/Linux)
+#[cfg(not(target_os = "macos"))]
+pub fn update_icon_for_theme(app_handle: &AppHandle, theme: &str) -> tauri::Result<()> {
+    // tray-dark.png = dark icon for light backgrounds
+    // tray-light.png = light icon for dark backgrounds
+    let icon_bytes = if theme == "dark" {
+        // Dark system theme = dark taskbar = needs light icon
+        include_bytes!("../icons/tray-light.png").as_slice()
+    } else {
+        // Light system theme = light taskbar = needs dark icon
+        include_bytes!("../icons/tray-dark.png").as_slice()
+    };
+
+    let icon = Image::from_bytes(icon_bytes)?;
+
+    if let Some(tray) = app_handle.tray_by_id("tray") {
+        tray.set_icon(Some(icon))?;
+    }
+
+    Ok(())
 }

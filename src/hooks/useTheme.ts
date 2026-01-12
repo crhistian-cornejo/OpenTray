@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import type { Theme } from "../lib/types";
 
 export function useTheme() {
@@ -10,10 +11,26 @@ export function useTheme() {
     localStorage.setItem("opentray-theme", theme);
     const root = document.documentElement;
     
+    const updateTray = (currentTheme: string) => {
+      invoke('update_tray_icon_theme', { theme: currentTheme }).catch(console.error);
+    };
+
     if (theme === "system") {
       root.removeAttribute("data-theme");
+      // Check system preference
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const applySystemTheme = () => {
+        const sysTheme = mediaQuery.matches ? 'dark' : 'light';
+        updateTray(sysTheme);
+      };
+      
+      applySystemTheme();
+      
+      mediaQuery.addEventListener('change', applySystemTheme);
+      return () => mediaQuery.removeEventListener('change', applySystemTheme);
     } else {
       root.setAttribute("data-theme", theme);
+      updateTray(theme);
     }
   }, [theme]);
 

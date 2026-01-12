@@ -1,0 +1,46 @@
+<svg width='240' height='300' viewBox='0 0 240 300' fill='none' xmlns='http://www.w3.org/2000/svg'>
+<g clip-path='url(#clip0_1401_86274)'>
+<mask id='mask0_1401_86274' style='mask-type:luminance' maskUnits='userSpaceOnUse' x='0' y='0' width='240' height='300'>
+<path d='M240 0H0V300H240V0Z' fill='white'/>
+</mask>
+<g mask='url(#mask0_1401_86274)'>
+<path d='M180 240H60V120H180V240Z' fill='#808080'/>
+<path d='M180 60H60V240H180V60ZM240 300H0V0H240V300Z' fill='#000000'/>
+<g transform="translate(120, 180) scale(2.2)">
+<!-- Icon centered horizontally relative to x=33, moved UP to stack -->
+<g transform="translate(-33, -38)">
+<path d="M24 21 L14 28 L24 35" fill="none" stroke="#000000" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M42 21 L52 28 L42 35" fill="none" stroke="#000000" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="36" y1="19" x2="30" y2="37" stroke="#000000" stroke-width="2.5" stroke-linecap="round"/>
+</g>
+<!-- Text TRAY centered horizontally relative to x=40.25, moved DOWN to stack -->
+<g transform="translate(-40.25, 2)">
+<!-- T -->
+<rect x="17" y="4" width="10" height="2.5" fill="#000000"/>
+<rect x="20.5" y="6.5" width="3" height="5.5" fill="#000000"/>
+<!-- R -->
+<rect x="29" y="4" width="2.5" height="8" fill="#000000"/>
+<rect x="31.5" y="4" width="5" height="2.5" fill="#000000"/>
+<rect x="36.5" y="4" width="2.5" height="3.5" fill="#000000"/>
+<rect x="31.5" y="7" width="5" height="2" fill="#000000"/>
+<rect x="35" y="9" width="4" height="3" fill="#000000"/>
+<!-- A -->
+<rect x="41" y="6.5" width="2.5" height="5.5" fill="#000000"/>
+<rect x="50" y="6.5" width="2.5" height="5.5" fill="#000000"/>
+<rect x="43.5" y="4" width="6.5" height="2.5" fill="#000000"/>
+<rect x="43.5" y="8" width="6.5" height="2" fill="#000000"/>
+<!-- Y -->
+<rect x="54" y="4" width="2.5" height="3.5" fill="#000000"/>
+<rect x="61" y="4" width="2.5" height="3.5" fill="#000000"/>
+<rect x="56.5" y="7" width="4.5" height="2" fill="#000000"/>
+<rect x="57.5" y="9" width="2.5" height="3" fill="#000000"/>
+</g>
+</g>
+</g>
+</g>
+<defs>
+<clipPath id='clip0_1401_86274'>
+<rect width='240' height='300' fill='white'/>
+</clipPath>
+</defs>
+</svg>

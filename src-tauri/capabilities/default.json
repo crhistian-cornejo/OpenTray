@@ -14,6 +14,7 @@
     "notification:allow-request-permission",
     "notification:allow-notify",
     "notification:allow-show",
+    "os:default",
     {
       "identifier": "http:default",
       "allow": [

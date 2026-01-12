@@ -16,6 +16,7 @@ import {
   fetchProviders,
   deleteSession,
   fetchTodos,
+  changeSessionModel,
 } from "../lib/api";
 
 export interface UseOpenCodeReturn {
@@ -57,6 +58,7 @@ export interface UseOpenCodeReturn {
   bulkDeleteArchivedSessions: (sessions: Session[]) => Promise<void>;
   toggleShowArchived: () => void;
   sendNotification: (title: string, body: string) => Promise<void>;
+  changeModel: (providerID: string, modelID: string) => Promise<boolean>;
 }
 
 export function useOpenCode(): UseOpenCodeReturn {
@@ -353,6 +355,19 @@ export function useOpenCode(): UseOpenCodeReturn {
     return abortSession(selectedInstance, selectedSession.id);
   }, [selectedInstance, selectedSession]);
 
+  const changeModel = useCallback(async (providerID: string, modelID: string): Promise<boolean> => {
+    if (!selectedInstance || !selectedSession) return false;
+    const result = await changeSessionModel(selectedInstance, selectedSession.id, providerID, modelID);
+    if (result) {
+      // Refresh config to get updated model
+      const newConfig = await fetchConfig(selectedInstance);
+      if (newConfig) {
+        setConfig(newConfig);
+      }
+    }
+    return result;
+  }, [selectedInstance, selectedSession]);
+
   const respondToPermission = useCallback(async (reply: "once" | "always" | "reject"): Promise<boolean> => {
     if (!selectedInstance || !permissionRequest) return false;
     const result = await replyPermission(
@@ -586,6 +601,7 @@ export function useOpenCode(): UseOpenCodeReturn {
     refresh,
     sendChatMessage,
     abort,
+    changeModel,
     respondToPermission,
     createNewSession,
     removeSession,

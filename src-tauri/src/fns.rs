@@ -243,7 +243,7 @@ pub fn update_tray_icon_with_badge(
 ) -> tauri::Result<()> {
     use tauri::image::Image;
 
-    let base_icon_bytes = include_bytes!("../icons/tray.png");
+    let base_icon_bytes = include_bytes!("../icons/tray-dark.png");
     let base_icon = image::load_from_memory(base_icon_bytes).unwrap();
 
     let final_icon = if let Some(text) = badge {

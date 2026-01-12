@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { type as getOsType } from "@tauri-apps/plugin-os";
 import {
   Header,
   InstanceList,
@@ -13,7 +14,7 @@ import {
   ArchivedSessions,
   UpdateBanner,
 } from "./components";
-import { useOpenCode, useTheme, useUpdater } from "./hooks";
+import { useOpenCode, useTheme, useUpdater, useSettings } from "./hooks";
 import type { View } from "./lib/types";
 import { getDirectoryName } from "./lib/utils";
 
@@ -21,6 +22,7 @@ import { getDirectoryName } from "./lib/utils";
 function App() {
   const [initialized, setInitialized] = useState(false);
   const [view, setView] = useState<View>("instances");
+  const [osType, setOsType] = useState<string>("");
   const [showTodoList, setShowTodoList] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const { theme, setTheme } = useTheme();
@@ -33,6 +35,8 @@ function App() {
     installUpdate,
     dismissUpdate,
   } = useUpdater();
+
+  const { settings: appSettings } = useSettings();
 
   const {
     instances,
@@ -55,6 +59,7 @@ function App() {
     refresh,
     sendChatMessage,
     abort,
+    changeModel,
     respondToPermission,
     createNewSession,
     removeSession,
@@ -70,7 +75,15 @@ function App() {
   // Initialize the panel
   useEffect(() => {
     if (!initialized) {
-      invoke("init").then(() => setInitialized(true));
+      invoke("init").then(async () => {
+        setInitialized(true);
+        try {
+          const type = await getOsType();
+          setOsType(type);
+        } catch (e) {
+          console.error("Failed to get OS type", e);
+        }
+      });
     }
   }, [initialized]);
 
@@ -169,7 +182,7 @@ function App() {
   };
 
   return (
-    <div className={`app ${initialized ? 'visible' : ''}`}>
+    <div className={`app ${initialized ? 'visible' : ''} ${osType === 'windows' ? 'is-windows' : ''} ${appSettings.compact_mode ? 'compact-mode' : ''}`}>
       {updateAvailable && updateInfo && (
         <UpdateBanner
           updateInfo={updateInfo}
@@ -233,8 +246,11 @@ function App() {
             messages={sessionDetails.messages}
             status={sessionStatus}
             providers={providers}
+            config={config}
+            projectDirectory={selectedInstance?.directory}
             onSendMessage={sendChatMessage}
             onAbort={abort}
+            onModelChange={changeModel}
           />
         )}
 
