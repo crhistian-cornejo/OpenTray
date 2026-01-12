@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo check:*)",
+      "Bash(npx tsc:*)",
+      "Bash(dir \"%APPDATA%\")",
+      "Bash(findstr:*)",
+      "Read(//d/OpenTray/**)",
+      "Read(//c/Users/crhistian.cornejo/AppData/Roaming/**)",
+      "Bash(npx sharp-cli:*)",
+      "Bash(ls:*)",
+      "Bash(curl:*)",
+      "Bash(for port in 4096 4097 4098 4099 4100 4101 4102 4103 4104 4105)",
+      "Bash(do curl -s -m 1 \"http://127.0.0.1:$port/global/health\")",
+      "Bash(echo:*)",
+      "Bash(done)",
+      "Bash(netstat:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git tag:*)",
+      "Bash(gh run list:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}
